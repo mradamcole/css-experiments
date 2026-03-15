@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Electric Orb WebGL</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell" aria-label="WebGL electric orb cursor experience">
+    <canvas id="energy-canvas" aria-hidden="true"></canvas>
+
+    <section class="hero-copy">
+      <p class="eyebrow">WebGL Cursor Study</p>
+      <h1>Electric energy orb.</h1>
+      <p class="description">
+        Drag a charged plasma orb through the dark and leave behind a luminous,
+        turbulent comet tail that fades into the atmosphere.
+      </p>
+    </section>
+
+    <p class="fallback-message" data-fallback hidden>
+      This experience needs WebGL support.
+    </p>
+  </main>
+
+  <noscript>This experience needs JavaScript enabled.</noscript>
+  <script type="module" src="script.js"></script>
+</body>
+</html>
