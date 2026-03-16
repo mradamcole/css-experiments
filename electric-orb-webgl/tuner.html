@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Electric Orb Tuner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="tuner-page">
+  <main class="app-shell" aria-label="WebGL electric orb tuning experience">
+    <canvas id="energy-canvas" aria-hidden="true"></canvas>
+
+    <section class="control-panel" data-controls-panel>
+      <div class="control-panel__header">
+        <div>
+          <p class="eyebrow">Tuning Lab</p>
+          <h1>Orb controls.</h1>
+          <p class="control-description">
+            Drag the mouse while adjusting sliders to test orb size, halo size,
+            brightness, and the key trail values that affect the look.
+          </p>
+        </div>
+
+        <div class="control-panel__actions">
+          <a class="control-button control-button--ghost" href="index.html">Open main page</a>
+          <button class="control-button" type="button" data-action="reset">Reset sliders</button>
+          <button class="control-button" type="button" data-action="copy">Copy current JSON</button>
+        </div>
+      </div>
+
+      <div class="control-sections" data-controls-list></div>
+      <p class="control-status" data-control-status>Live tuning ready.</p>
+    </section>
+
+    <p class="fallback-message" data-fallback hidden>
+      This experience needs WebGL support.
+    </p>
+  </main>
+
+  <noscript>This experience needs JavaScript enabled.</noscript>
+  <script type="module" src="tuner.js"></script>
+</body>
+</html>
