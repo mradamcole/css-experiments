@@ -75,12 +75,13 @@ const PARAMS = {
   sequence: {
     earthDelaySeconds: 3,
     earthFadeDuration: 1.6,
-    approachDuration: 1.45,
-    frontArcDuration: 2.25,
-    backArcDuration: 2.45,
-    reentryDuration: 0.95,
-    finalArcDuration: 1.8,
+    approachDuration: 1, //1.45
+    frontArcDuration: 2, //2.25
+    backArcDuration: 2, //2.45
+    reentryDuration: 0.95, //0.95
+    finalArcDuration: 1.0, //1.8
     edgeInset: 48,
+    cometFadeOutSpeed: 1.5, // Multiplier for comet fade-out speed during the final swoop. Default: 1.
   },
   earth: {
     radiusMultiplier: 0.46,
@@ -88,12 +89,28 @@ const PARAMS = {
     scaleEnd: 1,
   },
   brand: {
-    maxWidth: 700,
     minWidth: 260,
-    logoScaleStart: 0.82,
+    maxWidth: 700,
+    logoFinalWidth: 620, // Final rendered logo width in pixels. Default: 352px.
+    logoOffsetX: 20, // Horizontal logo offset from screen center in pixels. Default: 0px.
+    logoOffsetY: 15, // Vertical logo offset from screen center in pixels. Default: 0px.
+    logoScaleStart: 0.02,
     logoScaleEnd: 1,
-    wordmarkScaleStart: 0.18,
-    wordmarkScaleEnd: 1,
+    logoFadeInSpeed: .5, // Multiplier for logo fade-in speed. Default: 1.
+    wordmarkOffsetX: -80, // Horizontal offset applied to the entire brand name in pixels. Default: 0px.
+    wordmarkStartOffset: {
+      x: 0, // Starting horizontal brand-name offset as an earth-radius multiplier. Default: 0.
+      y: -1.08, // Starting vertical brand-name offset as an earth-radius multiplier. Default: -0.08.
+    },
+    wordmarkEndOffset: {
+      x: 0, // Final horizontal brand-name offset as an earth-radius multiplier. Default: 0.
+      y: 1.02, // Final vertical brand-name offset as an earth-radius multiplier. Default: 1.02.
+    },
+    wordmarkScaleStart: 0.1,
+    wordmarkScaleEnd: .6,
+    wordmarkFadeInSpeed: .6, // Multiplier for brand-name fade-in speed. Default: 1.
+    topFontSize: 180, // Maximum font size for the top brand-name row in pixels. Default: 180px.
+    bottomFontSize: 102, // Maximum font size for the bottom brand-name row in pixels. Default: 110px.
   },
   layers: {
     frontOverlayOpacity: 1.2,
@@ -126,11 +143,19 @@ function easeOutCubic(value) {
   return 1 - Math.pow(1 - clamp(value, 0, 1), 3);
 }
 
+function applySpeedMultiplier(progress, speed) {
+  return clamp(progress * Math.max(speed, 0.0001), 0, 1);
+}
+
 function mixPoint(a, b, alpha) {
   return {
     x: lerp(a.x, b.x, alpha),
     y: lerp(a.y, b.y, alpha),
   };
+}
+
+function distanceBetween(a, b) {
+  return Math.hypot(b.x - a.x, b.y - a.y);
 }
 
 function cubicBezier(p0, p1, p2, p3, t) {
@@ -140,6 +165,89 @@ function cubicBezier(p0, p1, p2, p3, t) {
   const abbc = mixPoint(ab, bc, t);
   const bccd = mixPoint(bc, cd, t);
   return mixPoint(abbc, bccd, t);
+}
+
+function estimateBezierPeakSpeed(p0, p1, p2, p3, duration, easing, samples = 48) {
+  const safeDuration = Math.max(duration, 0.0001);
+  const dt = safeDuration / samples;
+  let previous = cubicBezier(p0, p1, p2, p3, easing(0));
+  let peakSpeed = 0;
+
+  for (let index = 1; index <= samples; index += 1) {
+    const progress = index / samples;
+    const point = cubicBezier(p0, p1, p2, p3, easing(progress));
+    peakSpeed = Math.max(peakSpeed, distanceBetween(previous, point) / dt);
+    previous = point;
+  }
+
+  return peakSpeed;
+}
+
+function buildBezierArcTable(p0, p1, p2, p3, samples = 48) {
+  const points = [p0];
+  const lengths = [0];
+  let totalLength = 0;
+  let previous = p0;
+
+  for (let index = 1; index <= samples; index += 1) {
+    const point = cubicBezier(p0, p1, p2, p3, index / samples);
+    totalLength += distanceBetween(previous, point);
+    points.push(point);
+    lengths.push(totalLength);
+    previous = point;
+  }
+
+  return {
+    points,
+    lengths,
+    totalLength,
+  };
+}
+
+function sampleArcTable(table, alpha) {
+  const clampedAlpha = clamp(alpha, 0, 1);
+  const targetLength = table.totalLength * clampedAlpha;
+
+  for (let index = 1; index < table.lengths.length; index += 1) {
+    const segmentEnd = table.lengths[index];
+
+    if (targetLength <= segmentEnd) {
+      const segmentStart = table.lengths[index - 1];
+      const segmentLength = Math.max(segmentEnd - segmentStart, 0.0001);
+      const segmentAlpha = (targetLength - segmentStart) / segmentLength;
+      return mixPoint(table.points[index - 1], table.points[index], segmentAlpha);
+    }
+  }
+
+  return table.points[table.points.length - 1];
+}
+
+function getFinalSwoopMetrics(anchors) {
+  const frontReturnArc = buildBezierArcTable(
+    anchors.swOrbit,
+    anchors.reentryControls[0],
+    anchors.reentryControls[1],
+    anchors.frontReturnPoint
+  );
+  const finalSwoopSpeed = estimateBezierPeakSpeed(
+    anchors.swOrbit,
+    anchors.reentryControls[0],
+    anchors.reentryControls[1],
+    anchors.frontReturnPoint,
+    PARAMS.sequence.reentryDuration,
+    easeInOutSine
+  );
+  const speed = Math.max(finalSwoopSpeed, 1);
+  const frontReturnDuration = frontReturnArc.totalLength / speed;
+  const finalPassDistance = distanceBetween(anchors.frontReturnPoint, anchors.neEdge);
+  const finalPassDuration = finalPassDistance / speed;
+
+  return {
+    frontReturnArc,
+    frontReturnDuration,
+    finalPassDuration,
+    totalDuration: frontReturnDuration + finalPassDuration,
+  };
 }
 
 function parseCssColorToVec3(colorValue, fallback) {
@@ -615,12 +723,14 @@ function fitTextToWidth(element, targetWidth, minSize, maxSize) {
 }
 
 function updateBrandLayout() {
+  const logoWidth = clamp(PARAMS.brand.logoFinalWidth, 120, state.width - 48);
   const width = clamp(state.width - 40, PARAMS.brand.minWidth, PARAMS.brand.maxWidth);
   state.brand.wordmarkWidth = width;
+  brandLogo.style.width = `${logoWidth}px`;
   brandWordmark.style.width = `${width}px`;
 
-  fitTextToWidth(brandLineTop, width, 36, 180);
-  fitTextToWidth(brandLineBottom, width, 18, 110);
+  fitTextToWidth(brandLineTop, width, 1, PARAMS.brand.topFontSize);
+  fitTextToWidth(brandLineBottom, width, 1, PARAMS.brand.bottomFontSize);
 }
 
 function resize() {
@@ -744,7 +854,8 @@ function getViewportRayPoint(angleDegrees) {
 function getOrbitAnchors() {
   updateEarthMetrics();
 
-  const swEdge = getViewportRayPoint(225);
+  // Screen-space Y increases downward, so southwest is 135deg here.
+  const swEdge = getViewportRayPoint(135);
   const neEdge = getViewportRayPoint(315);
   const radius = state.earth.radius;
   const centerX = state.earth.centerX;
@@ -801,11 +912,13 @@ function setOrbPosition(point, previousX, previousY, dt) {
 
 function getBrandRevealProgress() {
   if (state.sequence.phase === "front-return") {
-    return easeOutCubic(clamp(state.sequence.phaseTime / PARAMS.sequence.reentryDuration, 0, 1)) * 0.52;
+    const metrics = getFinalSwoopMetrics(getOrbitAnchors());
+    return easeOutCubic(clamp(state.sequence.phaseTime / metrics.frontReturnDuration, 0, 1)) * 0.52;
   }
 
   if (state.sequence.phase === "final-front-pass") {
-    const phaseProgress = easeOutCubic(clamp(state.sequence.phaseTime / PARAMS.sequence.finalArcDuration, 0, 1));
+    const metrics = getFinalSwoopMetrics(getOrbitAnchors());
+    const phaseProgress = easeOutCubic(clamp(state.sequence.phaseTime / metrics.finalPassDuration, 0, 1));
     return lerp(0.52, 1, phaseProgress);
   }
 
@@ -834,25 +947,32 @@ function updateSceneVisuals() {
   earthOpacity = lerp(earthOpacity, 0, brandProgress);
   earthScale = lerp(earthScale, 0.84, brandProgress);
 
-  const logoOpacity = easeOutCubic(brandProgress);
+  const logoOpacity = easeOutCubic(applySpeedMultiplier(brandProgress, PARAMS.brand.logoFadeInSpeed));
   const logoScale = lerp(PARAMS.brand.logoScaleStart, PARAMS.brand.logoScaleEnd, logoOpacity);
-  const wordmarkOpacity = easeOutCubic(clamp((brandProgress - 0.18) / 0.82, 0, 1));
+  const wordmarkOpacity = easeOutCubic(
+    applySpeedMultiplier(clamp((brandProgress - 0.18) / 0.82, 0, 1), PARAMS.brand.wordmarkFadeInSpeed)
+  );
   const wordmarkScale = lerp(
     PARAMS.brand.wordmarkScaleStart,
     PARAMS.brand.wordmarkScaleEnd,
     easeOutCubic(brandProgress)
   );
-  const startY = -state.earth.radius * 0.08;
-  const endY = state.earth.radius * 1.02;
-  const wordmarkY = lerp(startY, endY, easeOutCubic(brandProgress));
+  const wordmarkStartX = PARAMS.brand.wordmarkStartOffset.x * state.earth.radius + PARAMS.brand.wordmarkOffsetX;
+  const wordmarkStartY = PARAMS.brand.wordmarkStartOffset.y * state.earth.radius;
+  const wordmarkEndX = PARAMS.brand.wordmarkEndOffset.x * state.earth.radius + PARAMS.brand.wordmarkOffsetX;
+  const wordmarkEndY = PARAMS.brand.wordmarkEndOffset.y * state.earth.radius;
+  const wordmarkX = lerp(wordmarkStartX, wordmarkEndX, easeOutCubic(brandProgress));
+  const wordmarkY = lerp(wordmarkStartY, wordmarkEndY, easeOutCubic(brandProgress));
 
   brandWash.style.opacity = brandProgress.toFixed(3);
   earthImage.style.opacity = earthOpacity.toFixed(3);
   earthImage.style.transform = `scale(${earthScale.toFixed(3)})`;
   brandLogo.style.opacity = logoOpacity.toFixed(3);
-  brandLogo.style.transform = `translate(-50%, -50%) scale(${logoScale.toFixed(3)})`;
+  brandLogo.style.transform =
+    `translate(-50%, -50%) translate(${PARAMS.brand.logoOffsetX.toFixed(1)}px, ${PARAMS.brand.logoOffsetY.toFixed(1)}px) scale(${logoScale.toFixed(3)})`;
   brandWordmark.style.opacity = wordmarkOpacity.toFixed(3);
-  brandWordmark.style.transform = `translate(-50%, ${wordmarkY.toFixed(1)}px) scale(${wordmarkScale.toFixed(3)})`;
+  brandWordmark.style.transform =
+    `translate(-50%, 0) translate(${wordmarkX.toFixed(1)}px, ${wordmarkY.toFixed(1)}px) scale(${wordmarkScale.toFixed(3)})`;
   frontCanvas.style.mixBlendMode = brandProgress > 0.08 ? "normal" : "screen";
   frontCanvas.style.filter = brandProgress > 0.08 ? "none" : "brightness(1.28) saturate(1.12)";
 }
@@ -882,6 +1002,7 @@ function maybeStartReveal() {
 
 function updateScriptedMotion(dt, previousX, previousY) {
   const anchors = getOrbitAnchors();
+  const finalSwoop = getFinalSwoopMetrics(anchors);
   const radius = state.earth.radius;
   state.sequence.phaseTime += dt;
 
@@ -958,19 +1079,16 @@ function updateScriptedMotion(dt, previousX, previousY) {
   }
 
   if (state.sequence.phase === "front-return") {
-    const progress = clamp(state.sequence.phaseTime / PARAMS.sequence.reentryDuration, 0, 1);
-    const eased = easeInOutSine(progress);
-    const point = cubicBezier(
-      anchors.swOrbit,
-      anchors.reentryControls[0],
-      anchors.reentryControls[1],
-      anchors.frontReturnPoint,
-      eased
+    const progress = clamp(state.sequence.phaseTime / finalSwoop.frontReturnDuration, 0, 1);
+    const fade = 1 - applySpeedMultiplier(
+      state.sequence.phaseTime / finalSwoop.totalDuration,
+      PARAMS.sequence.cometFadeOutSpeed
     );
+    const point = sampleArcTable(finalSwoop.frontReturnArc, progress);
 
     setOrbPosition(point, previousX, previousY, dt);
-    state.render.backOrbOpacity = PARAMS.layers.frontBackfillOpacity * 0.15;
-    state.render.frontOrbOpacity = PARAMS.layers.frontOverlayOpacity * 1.22;
+    state.render.backOrbOpacity = PARAMS.layers.frontBackfillOpacity * 0.15 * fade;
+    state.render.frontOrbOpacity = PARAMS.layers.frontOverlayOpacity * 1.22 * fade;
 
     if (progress >= 1) {
       state.sequence.phase = "final-front-pass";
@@ -981,15 +1099,16 @@ function updateScriptedMotion(dt, previousX, previousY) {
   }
 
   if (state.sequence.phase === "final-front-pass") {
-    const progress = clamp(state.sequence.phaseTime / PARAMS.sequence.finalArcDuration, 0, 1);
-    const eased = easeInOutSine(progress);
-    const fade = 1 - easeOutCubic(clamp((progress - 0.52) / 0.48, 0, 1));
-    const point = cubicBezier(
+    const progress = clamp(state.sequence.phaseTime / finalSwoop.finalPassDuration, 0, 1);
+    const elapsed = finalSwoop.frontReturnDuration + state.sequence.phaseTime;
+    const fade = 1 - applySpeedMultiplier(
+      elapsed / finalSwoop.totalDuration,
+      PARAMS.sequence.cometFadeOutSpeed
+    );
+    const point = mixPoint(
       anchors.frontReturnPoint,
-      anchors.finalControls[0],
-      anchors.finalControls[1],
-      anchors.finalFadeTarget,
-      eased
+      anchors.neEdge,
+      progress
     );
 
     setOrbPosition(point, previousX, previousY, dt);
