@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clairiva</title>
+  <script>
+    (function () {
+      const searchParams = new URLSearchParams(window.location.search);
+      const forceLandingPage = searchParams.get("showlandingpage")?.toLowerCase() === "true";
+
+      if (!forceLandingPage) {
+        return;
+      }
+
+      window.location.replace(`index.html${window.location.search}${window.location.hash}`);
+    }());
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Rajdhani:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="home.css">
+</head>
+<body>
+  <main class="home-shell" aria-label="Clairiva homepage">
+    <div class="brand-stage" aria-hidden="true">
+      <img
+        id="brand-logo"
+        class="brand-logo"
+        src="../imgs/clairiva-logo.svg"
+        alt=""
+        decoding="async"
+      >
+      <div id="brand-wordmark" class="brand-wordmark">
+        <div id="brand-line-top" class="brand-line brand-line--top">CLAIRIVA</div>
+        <div id="brand-line-bottom" class="brand-line brand-line--bottom">INTERNATIONAL</div>
+      </div>
+    </div>
+  </main>
+
+  <script type="module" src="home.js"></script>
+</body>
+</html>

@@ -114,6 +114,7 @@ const PARAMS = {
     postReveal: {
       pauseDuration: 1.0, // Seconds to hold the completed brand lockup before moving it. Default: 0.
       transitionDuration: 1, // Seconds for the top-left transition after the pause. Default: 1.
+      homepageUrl: "home.html", // Destination page to load after the top-left transition completes.
       logoTargetLeft: 10, // Final logo left position in pixels. Default: 0px.
       logoTargetTop: 5, // Final logo top position in pixels. Default: 0px.
       logoTargetHeight: 50, // Final logo height in pixels while maintaining aspect ratio. Default: 50px.
@@ -131,6 +132,7 @@ const PARAMS = {
 
 const MAX_TRAIL_POINTS = PARAMS.renderer.maxTrailPoints;
 const FLOATS_PER_POINT = 4;
+const HOME_LOCKUP_STORAGE_KEY = "clairiva-home-lockup";
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
@@ -698,6 +700,7 @@ const state = {
     approachStart: null,
     finished: false,
     finishedTime: 0,
+    homepageRequested: false,
   },
 };
 
@@ -793,6 +796,30 @@ function capturePostRevealStart() {
   };
 
   return state.brand.postRevealStart;
+}
+
+function navigateToHomepage() {
+  if (state.sequence.homepageRequested) {
+    return;
+  }
+
+  state.sequence.homepageRequested = true;
+
+  try {
+    window.sessionStorage.setItem(
+      HOME_LOCKUP_STORAGE_KEY,
+      JSON.stringify({
+        logoStyle: brandLogo.style.cssText,
+        wordmarkStyle: brandWordmark.style.cssText,
+        lineTopStyle: brandLineTop.style.cssText,
+        lineBottomStyle: brandLineBottom.style.cssText,
+      })
+    );
+  } catch (error) {
+    console.warn("Unable to persist Clairiva home lockup.", error);
+  }
+
+  window.location.replace(PARAMS.brand.postReveal.homepageUrl);
 }
 
 function resize() {
@@ -1064,6 +1091,10 @@ function updateSceneVisuals() {
   brandWordmark.style.textAlign = "left";
   brandWordmark.style.transform =
     `scale(${lerp(postReveal.wordmarkScale, wordmarkTargetScale, dockProgress).toFixed(3)})`;
+
+  if (dockProgress >= 1) {
+    navigateToHomepage();
+  }
 }
 
 function maybeStartReveal() {

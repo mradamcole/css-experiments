@@ -1,0 +1,84 @@
+:root {
+  color-scheme: light;
+  --page-bg: #ffffff;
+  --wordmark-color: #12042e;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  overflow: hidden;
+  background: var(--page-bg);
+  font-family: "Rajdhani", sans-serif;
+}
+
+.home-shell {
+  min-height: 100vh;
+  opacity: 0;
+}
+
+body[data-ready="true"] .home-shell {
+  opacity: 1;
+}
+
+.brand-stage {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.brand-logo {
+  position: fixed;
+  left: 10px;
+  top: 5px;
+  height: 50px;
+  width: auto;
+  display: block;
+  opacity: 1;
+  transform: none;
+  transform-origin: top left;
+  filter: drop-shadow(0 1rem 1.5rem rgba(0, 0, 0, 0.08));
+}
+
+.brand-wordmark {
+  position: fixed;
+  left: 70px;
+  top: 5px;
+  width: 320px;
+  opacity: 1;
+  transform: none;
+  transform-origin: top left;
+  color: var(--wordmark-color);
+  text-align: left;
+}
+
+.brand-line {
+  width: 100%;
+  font-family: "Montserrat", "Arial Black", Arial, sans-serif;
+  font-weight: 900;
+  line-height: 0.9;
+  white-space: nowrap;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.brand-line--top {
+  margin-bottom: 0.08em;
+  font-size: 26px;
+}
+
+.brand-line--bottom {
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 0.1em;
+  transform: scaleX(0.985);
+  transform-origin: left top;
+}

@@ -4,6 +4,35 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Clairiva</title>
+  <script>
+    (function () {
+      const HOMEPAGE_URL = "home.html";
+      const VISIT_COUNT_STORAGE_KEY = "clairiva-visit-count";
+      const searchParams = new URLSearchParams(window.location.search);
+      const forceLandingPage = searchParams.get("showlandingpage")?.toLowerCase() === "true";
+
+      if (forceLandingPage) {
+        return;
+      }
+
+      let visitCount = 1;
+
+      try {
+        const savedCount = Number.parseInt(window.localStorage.getItem(VISIT_COUNT_STORAGE_KEY) || "0", 10);
+        visitCount = Number.isFinite(savedCount) ? savedCount + 1 : 1;
+        window.localStorage.setItem(VISIT_COUNT_STORAGE_KEY, String(visitCount));
+      } catch (error) {
+        visitCount = 1;
+      }
+
+      if (visitCount !== 1 && visitCount % 10 !== 0) {
+        searchParams.delete("showlandingpage");
+        const nextSearch = searchParams.toString();
+        const destination = `${HOMEPAGE_URL}${nextSearch ? `?${nextSearch}` : ""}${window.location.hash}`;
+        window.location.replace(destination);
+      }
+    }());
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Orbitron:wght@500;700&family=Rajdhani:wght@400;600&display=swap" rel="stylesheet">
