@@ -96,7 +96,7 @@ const PARAMS = {
     logoOffsetY: 15, // Vertical logo offset from screen center in pixels. Default: 0px.
     logoScaleStart: 0.02,
     logoScaleEnd: 1,
-    logoFadeInSpeed: .5, // Multiplier for logo fade-in speed. Default: 1.
+    logoFadeInSpeed: 1, // Multiplier for logo fade-in speed. Default: 1.
     wordmarkOffsetX: -80, // Horizontal offset applied to the entire brand name in pixels. Default: 0px.
     wordmarkStartOffset: {
       x: 0, // Starting horizontal brand-name offset as an earth-radius multiplier. Default: 0.
@@ -112,7 +112,7 @@ const PARAMS = {
     topFontSize: 180, // Maximum font size for the top brand-name row in pixels. Default: 180px.
     bottomFontSize: 102, // Maximum font size for the bottom brand-name row in pixels. Default: 110px.
     postReveal: {
-      pauseDuration: 2.5, // Seconds to hold the completed brand lockup before moving it. Default: 0.
+      pauseDuration: 1.0, // Seconds to hold the completed brand lockup before moving it. Default: 0.
       transitionDuration: 1, // Seconds for the top-left transition after the pause. Default: 1.
       logoTargetLeft: 10, // Final logo left position in pixels. Default: 0px.
       logoTargetTop: 5, // Final logo top position in pixels. Default: 0px.
