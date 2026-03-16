@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clairiva Orbit Animation</title>
+    <style>
+        :root {
+            --bg-color: #0f051d; /* Deep space purple */
+            --comet-color: #000080; /* Navy Blue */
+            --earth-size: 480px;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+        }
+
+        .container {
+            position: relative;
+            width: var(--earth-size);
+            height: var(--earth-size);
+        }
+
+        /* The Earth GIF */
+        .earth {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5; /* Middle ground */
+            pointer-events: none;
+        }
+
+        /* The Comet (CSS Circle) */
+        .comet {
+            position: absolute;
+            width: 25px;
+            height: 25px;
+            background: var(--comet-color);
+            border-radius: 50%;
+            box-shadow: 0 0 15px var(--comet-color), 0 0 5px #fff;
+            
+            /* The Motion Path */
+            offset-path: path('M 50,380 C 100,480 400,450 450,150 C 480,50 100,50 50,380');
+            animation: orbit 4s infinite linear;
+            z-index: 10;
+        }
+
+        /* The Final Logo (Initially Hidden) */
+        .full-logo {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 20;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            pointer-events: none;
+        }
+
+        /* Animation for 3D Orbit Illusion */
+        @keyframes orbit {
+            0% { 
+                offset-distance: 0%; 
+                z-index: 10; /* In front */
+                transform: scale(1.1);
+                filter: brightness(1.2);
+            }
+            45% {
+                z-index: 10;
+            }
+            50% { 
+                offset-distance: 50%; 
+                z-index: 2; /* Behind Earth */
+                transform: scale(0.6);
+                filter: brightness(0.5);
+            }
+            95% {
+                z-index: 2;
+            }
+            100% { 
+                offset-distance: 100%; 
+                z-index: 10; 
+                transform: scale(1.1);
+                filter: brightness(1.2);
+            }
+        }
+
+        /* Controls */
+        .controls {
+            margin-top: 50px;
+            z-index: 100;
+        }
+
+        button {
+            padding: 12px 24px;
+            background: transparent;
+            border: 2px solid var(--comet-color);
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: var(--comet-color);
+        }
+
+        .resolved .comet {
+            display: none;
+        }
+        .resolved .full-logo {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="stage">
+        <img src="Rotating_earth_animated_transparent.gif" alt="Rotating Earth" class="earth">
+        
+        <div class="comet"></div>
+
+        <img src="clairiva-logo.svg" alt="Clairiva Logo" class="full-logo">
+    </div>
+
+    <div class="controls">
+        <button onclick="resolveLogo()">Resolve Brand</button>
+    </div>
+
+    <script>
+        function resolveLogo() {
+            document.getElementById('stage').classList.toggle('resolved');
+        }
+    </script>
+</body>
+</html>

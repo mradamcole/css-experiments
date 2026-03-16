@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clairiva</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell" aria-label="Clairiva landing experience">
+    <canvas id="energy-canvas" aria-hidden="true"></canvas>
+
+    <div class="earth-stage" aria-hidden="true">
+      <img
+        id="earth-image"
+        class="earth-image"
+        data-src="../imgs/Rotating_earth_animated_transparent.gif"
+        alt=""
+        decoding="async"
+      >
+    </div>
+
+    <canvas id="energy-canvas-front" aria-hidden="true"></canvas>
+
+    <section class="hero-copy">
+      <p class="eyebrow">Clairiva</p>
+      <h1>Signal around the world.</h1>
+      <p class="description">
+        An electric orb wakes the field, then falls into orbit around the earth.
+      </p>
+    </section>
+
+    <p class="fallback-message" data-fallback hidden>
+      This experience needs WebGL support.
+    </p>
+  </main>
+
+  <noscript>This experience needs JavaScript enabled.</noscript>
+  <script type="module" src="script.js"></script>
+</body>
+</html>
