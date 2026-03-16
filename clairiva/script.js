@@ -1,6 +1,11 @@
 const backCanvas = document.getElementById("energy-canvas");
 const frontCanvas = document.getElementById("energy-canvas-front");
 const earthImage = document.getElementById("earth-image");
+const brandWash = document.getElementById("brand-wash");
+const brandLogo = document.getElementById("brand-logo");
+const brandWordmark = document.getElementById("brand-wordmark");
+const brandLineTop = document.getElementById("brand-line-top");
+const brandLineBottom = document.getElementById("brand-line-bottom");
 const fallbackMessage = document.querySelector("[data-fallback]");
 
 const PARAMS = {
@@ -81,6 +86,14 @@ const PARAMS = {
     radiusMultiplier: 0.46,
     scaleStart: 0.9,
     scaleEnd: 1,
+  },
+  brand: {
+    maxWidth: 700,
+    minWidth: 260,
+    logoScaleStart: 0.82,
+    logoScaleEnd: 1,
+    wordmarkScaleStart: 0.18,
+    wordmarkScaleEnd: 1,
   },
   layers: {
     frontOverlayOpacity: 1.2,
@@ -550,6 +563,9 @@ const state = {
     backOrbOpacity: 1,
     frontOrbOpacity: 0,
   },
+  brand: {
+    wordmarkWidth: 0,
+  },
   sequence: {
     preloadStarted: false,
     earthLoaded: false,
@@ -577,6 +593,36 @@ function updateEarthMetrics() {
   state.earth.radius = Math.min(rect.width, rect.height) * PARAMS.earth.radiusMultiplier;
 }
 
+function fitTextToWidth(element, targetWidth, minSize, maxSize) {
+  let low = minSize;
+  let high = maxSize;
+  let best = minSize;
+
+  for (let iteration = 0; iteration < 18; iteration += 1) {
+    const mid = (low + high) * 0.5;
+    element.style.fontSize = `${mid}px`;
+    const measuredWidth = element.getBoundingClientRect().width;
+
+    if (measuredWidth <= targetWidth) {
+      best = mid;
+      low = mid;
+    } else {
+      high = mid;
+    }
+  }
+
+  element.style.fontSize = `${best}px`;
+}
+
+function updateBrandLayout() {
+  const width = clamp(state.width - 40, PARAMS.brand.minWidth, PARAMS.brand.maxWidth);
+  state.brand.wordmarkWidth = width;
+  brandWordmark.style.width = `${width}px`;
+
+  fitTextToWidth(brandLineTop, width, 36, 180);
+  fitTextToWidth(brandLineBottom, width, 18, 110);
+}
+
 function resize() {
   state.dpr = Math.min(window.devicePixelRatio || 1, PARAMS.renderer.maxDpr);
   state.width = window.innerWidth;
@@ -597,6 +643,7 @@ function resize() {
   }
 
   updateEarthMetrics();
+  updateBrandLayout();
 }
 
 function startEarthPreload() {
@@ -752,9 +799,26 @@ function setOrbPosition(point, previousX, previousY, dt) {
   state.orb.vy = (state.orb.y - previousY) / Math.max(dt, 0.0001);
 }
 
-function updateEarthVisuals() {
-  let opacity = 0;
-  let scale = PARAMS.earth.scaleStart;
+function getBrandRevealProgress() {
+  if (state.sequence.phase === "front-return") {
+    return easeOutCubic(clamp(state.sequence.phaseTime / PARAMS.sequence.reentryDuration, 0, 1)) * 0.52;
+  }
+
+  if (state.sequence.phase === "final-front-pass") {
+    const phaseProgress = easeOutCubic(clamp(state.sequence.phaseTime / PARAMS.sequence.finalArcDuration, 0, 1));
+    return lerp(0.52, 1, phaseProgress);
+  }
+
+  if (state.sequence.finished) {
+    return 1;
+  }
+
+  return 0;
+}
+
+function updateSceneVisuals() {
+  let earthOpacity = 0;
+  let earthScale = PARAMS.earth.scaleStart;
 
   if (state.sequence.revealStarted) {
     const progress = clamp(
@@ -762,12 +826,35 @@ function updateEarthVisuals() {
       0,
       1
     );
-    opacity = easeOutCubic(progress);
-    scale = lerp(PARAMS.earth.scaleStart, PARAMS.earth.scaleEnd, easeOutCubic(progress));
+    earthOpacity = easeOutCubic(progress);
+    earthScale = lerp(PARAMS.earth.scaleStart, PARAMS.earth.scaleEnd, easeOutCubic(progress));
   }
 
-  earthImage.style.opacity = opacity.toFixed(3);
-  earthImage.style.transform = `scale(${scale.toFixed(3)})`;
+  const brandProgress = getBrandRevealProgress();
+  earthOpacity = lerp(earthOpacity, 0, brandProgress);
+  earthScale = lerp(earthScale, 0.84, brandProgress);
+
+  const logoOpacity = easeOutCubic(brandProgress);
+  const logoScale = lerp(PARAMS.brand.logoScaleStart, PARAMS.brand.logoScaleEnd, logoOpacity);
+  const wordmarkOpacity = easeOutCubic(clamp((brandProgress - 0.18) / 0.82, 0, 1));
+  const wordmarkScale = lerp(
+    PARAMS.brand.wordmarkScaleStart,
+    PARAMS.brand.wordmarkScaleEnd,
+    easeOutCubic(brandProgress)
+  );
+  const startY = -state.earth.radius * 0.08;
+  const endY = state.earth.radius * 1.02;
+  const wordmarkY = lerp(startY, endY, easeOutCubic(brandProgress));
+
+  brandWash.style.opacity = brandProgress.toFixed(3);
+  earthImage.style.opacity = earthOpacity.toFixed(3);
+  earthImage.style.transform = `scale(${earthScale.toFixed(3)})`;
+  brandLogo.style.opacity = logoOpacity.toFixed(3);
+  brandLogo.style.transform = `translate(-50%, -50%) scale(${logoScale.toFixed(3)})`;
+  brandWordmark.style.opacity = wordmarkOpacity.toFixed(3);
+  brandWordmark.style.transform = `translate(-50%, ${wordmarkY.toFixed(1)}px) scale(${wordmarkScale.toFixed(3)})`;
+  frontCanvas.style.mixBlendMode = brandProgress > 0.08 ? "normal" : "screen";
+  frontCanvas.style.filter = brandProgress > 0.08 ? "none" : "brightness(1.28) saturate(1.12)";
 }
 
 function maybeStartReveal() {
@@ -955,7 +1042,7 @@ function updateTrail(dt, motion) {
 
 function update(dt) {
   state.time += dt;
-  updateEarthVisuals();
+  updateSceneVisuals();
   maybeStartReveal();
 
   const idleX = state.width * 0.5 + Math.cos(state.time * PARAMS.idle.xFrequency) * state.width * PARAMS.idle.xAmplitude;

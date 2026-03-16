@@ -3,9 +3,6 @@
   --bg-top: #02050d;
   --bg-bottom: #050211;
   --text: rgba(232, 243, 255, 0.96);
-  --muted: rgba(173, 197, 234, 0.74);
-  --accent: rgba(120, 230, 255, 0.92);
-  --panel-border: rgba(128, 183, 255, 0.14);
   --earth-opacity: 0;
   --earth-scale: 0.9;
 }
@@ -73,6 +70,15 @@ body::after {
   z-index: 0;
 }
 
+.brand-wash {
+  position: fixed;
+  inset: 0;
+  background: #ffffff;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
 #energy-canvas-front {
   z-index: 3;
   pointer-events: none;
@@ -106,48 +112,57 @@ body::after {
     transform 220ms ease-out;
 }
 
-.hero-copy {
+.brand-stage {
   position: fixed;
-  left: clamp(1rem, 3vw, 2.5rem);
-  bottom: clamp(1rem, 3.2vw, 2.75rem);
-  width: min(28rem, calc(100vw - 2rem));
-  padding: 1.05rem 1.2rem 1.1rem;
-  border: 1px solid var(--panel-border);
-  border-radius: 1.25rem;
-  background: linear-gradient(135deg, rgba(7, 13, 28, 0.48), rgba(13, 9, 34, 0.14));
-  backdrop-filter: blur(18px);
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.02) inset,
-    0 18px 80px rgba(0, 0, 0, 0.3);
+  inset: 0;
   pointer-events: none;
   z-index: 4;
 }
 
-.eyebrow {
-  margin: 0 0 0.45rem;
-  color: var(--accent);
-  font-family: "Orbitron", sans-serif;
-  font-size: 0.8rem;
-  letter-spacing: 0.24em;
+.brand-logo {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  width: min(42vmin, 22rem);
+  max-width: calc(100vw - 3rem);
+  display: block;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.82);
+  transform-origin: center;
+  filter: drop-shadow(0 1rem 1.5rem rgba(0, 0, 0, 0.08));
+}
+
+.brand-wordmark {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  width: min(700px, calc(100vw - 2.5rem));
+  opacity: 0;
+  transform: translate(-50%, 0) scale(0.2);
+  transform-origin: center top;
+  color: #12042e;
+  text-align: center;
+}
+
+.brand-line {
+  width: 100%;
+  font-family: "Montserrat", "Arial Black", Arial, sans-serif;
+  font-weight: 900;
+  line-height: 0.9;
+  white-space: nowrap;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
-.hero-copy h1 {
-  margin: 0;
-  font-family: "Orbitron", sans-serif;
-  font-size: clamp(2rem, 5vw, 4rem);
-  line-height: 0.98;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  text-shadow: 0 0 26px rgba(109, 214, 255, 0.24);
+.brand-line--top {
+  margin-bottom: 0.08em;
 }
 
-.description {
-  margin: 0.8rem 0 0;
-  max-width: 25rem;
-  color: var(--muted);
-  font-size: clamp(1rem, 1.32vw, 1.12rem);
-  line-height: 1.42;
+.brand-line--bottom {
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  transform: scaleX(0.985);
+  transform-origin: center top;
 }
 
 .fallback-message,
@@ -168,12 +183,7 @@ noscript {
     width: min(82vmin, 28rem);
   }
 
-  .hero-copy {
-    width: calc(100vw - 1.25rem);
-    padding: 1rem 1.05rem 1.1rem;
-  }
-
-  .description {
-    max-width: 100%;
+  .brand-logo {
+    width: min(56vmin, 16rem);
   }
 }

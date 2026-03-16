@@ -6,12 +6,13 @@
   <title>Clairiva</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Orbitron:wght@500;700&family=Rajdhani:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <main class="app-shell" aria-label="Clairiva landing experience">
     <canvas id="energy-canvas" aria-hidden="true"></canvas>
+    <div id="brand-wash" class="brand-wash" aria-hidden="true"></div>
 
     <div class="earth-stage" aria-hidden="true">
       <img
@@ -25,13 +26,19 @@
 
     <canvas id="energy-canvas-front" aria-hidden="true"></canvas>
 
-    <section class="hero-copy">
-      <p class="eyebrow">Clairiva</p>
-      <h1>Signal around the world.</h1>
-      <p class="description">
-        An electric orb wakes the field, then falls into orbit around the earth.
-      </p>
-    </section>
+    <div class="brand-stage" aria-hidden="true">
+      <img
+        id="brand-logo"
+        class="brand-logo"
+        src="../imgs/clairiva-logo.svg"
+        alt=""
+        decoding="async"
+      >
+      <div id="brand-wordmark" class="brand-wordmark">
+        <div id="brand-line-top" class="brand-line brand-line--top">CLAIRIVA</div>
+        <div id="brand-line-bottom" class="brand-line brand-line--bottom">INTERNATIONAL</div>
+      </div>
+    </div>
 
     <p class="fallback-message" data-fallback hidden>
       This experience needs WebGL support.
