@@ -111,6 +111,16 @@ const PARAMS = {
     wordmarkFadeInSpeed: .6, // Multiplier for brand-name fade-in speed. Default: 1.
     topFontSize: 180, // Maximum font size for the top brand-name row in pixels. Default: 180px.
     bottomFontSize: 102, // Maximum font size for the bottom brand-name row in pixels. Default: 110px.
+    postReveal: {
+      pauseDuration: 2.5, // Seconds to hold the completed brand lockup before moving it. Default: 0.
+      transitionDuration: 1, // Seconds for the top-left transition after the pause. Default: 1.
+      logoTargetLeft: 10, // Final logo left position in pixels. Default: 0px.
+      logoTargetTop: 5, // Final logo top position in pixels. Default: 0px.
+      logoTargetHeight: 50, // Final logo height in pixels while maintaining aspect ratio. Default: 50px.
+      wordmarkTargetLeft: 70, // Final wordmark left offset in pixels. Default: 60px.
+      wordmarkTargetTop: 5, // Final wordmark top position in pixels. Default: 0px.
+      wordmarkTargetHeight: 45, // Final wordmark height in pixels while maintaining aspect ratio. Default: 50px.
+    },
   },
   layers: {
     frontOverlayOpacity: 1.2,
@@ -672,7 +682,10 @@ const state = {
     frontOrbOpacity: 0,
   },
   brand: {
+    logoWidth: 0,
+    logoBaseHeight: 0,
     wordmarkWidth: 0,
+    postRevealStart: null,
   },
   sequence: {
     preloadStarted: false,
@@ -684,6 +697,7 @@ const state = {
     phaseTime: 0,
     approachStart: null,
     finished: false,
+    finishedTime: 0,
   },
 };
 
@@ -725,12 +739,60 @@ function fitTextToWidth(element, targetWidth, minSize, maxSize) {
 function updateBrandLayout() {
   const logoWidth = clamp(PARAMS.brand.logoFinalWidth, 120, state.width - 48);
   const width = clamp(state.width - 40, PARAMS.brand.minWidth, PARAMS.brand.maxWidth);
+  const logoAspectRatio = brandLogo.naturalWidth > 0 && brandLogo.naturalHeight > 0
+    ? brandLogo.naturalHeight / brandLogo.naturalWidth
+    : 1;
+
+  state.brand.logoWidth = logoWidth;
+  state.brand.logoBaseHeight = logoWidth * logoAspectRatio;
   state.brand.wordmarkWidth = width;
   brandLogo.style.width = `${logoWidth}px`;
   brandWordmark.style.width = `${width}px`;
 
   fitTextToWidth(brandLineTop, width, 1, PARAMS.brand.topFontSize);
   fitTextToWidth(brandLineBottom, width, 1, PARAMS.brand.bottomFontSize);
+}
+
+function getPostRevealProgress() {
+  if (!state.sequence.finished) {
+    return 0;
+  }
+
+  const elapsed = Math.max(state.time - state.sequence.finishedTime, 0);
+  const pauseDuration = PARAMS.brand.postReveal.pauseDuration;
+  const transitionDuration = Math.max(PARAMS.brand.postReveal.transitionDuration, 0.0001);
+
+  if (elapsed <= pauseDuration) {
+    return 0;
+  }
+
+  return clamp((elapsed - pauseDuration) / transitionDuration, 0, 1);
+}
+
+function capturePostRevealStart() {
+  if (state.brand.postRevealStart) {
+    return state.brand.postRevealStart;
+  }
+
+  const wordmarkScale = Math.max(PARAMS.brand.wordmarkScaleEnd, 0.0001);
+  const logoRect = brandLogo.getBoundingClientRect();
+  const wordmarkRect = brandWordmark.getBoundingClientRect();
+  const lineTopRect = brandLineTop.getBoundingClientRect();
+  const lineBottomRect = brandLineBottom.getBoundingClientRect();
+
+  state.brand.postRevealStart = {
+    logoLeft: logoRect.left,
+    logoTop: logoRect.top,
+    logoScale: PARAMS.brand.logoScaleEnd,
+    logoBaseHeight: Math.max(state.brand.logoBaseHeight, logoRect.height),
+    wordmarkLeft: wordmarkRect.left,
+    wordmarkTop: wordmarkRect.top,
+    wordmarkScale: PARAMS.brand.wordmarkScaleEnd,
+    wordmarkBaseWidth: Math.max(lineTopRect.width, lineBottomRect.width) / wordmarkScale,
+    wordmarkBaseHeight: wordmarkRect.height / wordmarkScale,
+  };
+
+  return state.brand.postRevealStart;
 }
 
 function resize() {
@@ -975,6 +1037,33 @@ function updateSceneVisuals() {
     `translate(-50%, 0) translate(${wordmarkX.toFixed(1)}px, ${wordmarkY.toFixed(1)}px) scale(${wordmarkScale.toFixed(3)})`;
   frontCanvas.style.mixBlendMode = brandProgress > 0.08 ? "normal" : "screen";
   frontCanvas.style.filter = brandProgress > 0.08 ? "none" : "brightness(1.28) saturate(1.12)";
+
+  if (!state.sequence.finished) {
+    return;
+  }
+
+  const postReveal = capturePostRevealStart();
+  const dockProgress = easeInOutCubic(getPostRevealProgress());
+  const logoTargetScale = PARAMS.brand.postReveal.logoTargetHeight / Math.max(postReveal.logoBaseHeight, 0.0001);
+  const wordmarkTargetScale =
+    PARAMS.brand.postReveal.wordmarkTargetHeight / Math.max(postReveal.wordmarkBaseHeight, 0.0001);
+
+  brandLogo.style.left = `${lerp(postReveal.logoLeft, PARAMS.brand.postReveal.logoTargetLeft, dockProgress).toFixed(1)}px`;
+  brandLogo.style.top = `${lerp(postReveal.logoTop, PARAMS.brand.postReveal.logoTargetTop, dockProgress).toFixed(1)}px`;
+  brandLogo.style.width = `${state.brand.logoWidth}px`;
+  brandLogo.style.height = `${postReveal.logoBaseHeight}px`;
+  brandLogo.style.transformOrigin = "top left";
+  brandLogo.style.transform = `scale(${lerp(postReveal.logoScale, logoTargetScale, dockProgress).toFixed(3)})`;
+
+  brandWordmark.style.left =
+    `${lerp(postReveal.wordmarkLeft, PARAMS.brand.postReveal.wordmarkTargetLeft, dockProgress).toFixed(1)}px`;
+  brandWordmark.style.top =
+    `${lerp(postReveal.wordmarkTop, PARAMS.brand.postReveal.wordmarkTargetTop, dockProgress).toFixed(1)}px`;
+  brandWordmark.style.width = `${postReveal.wordmarkBaseWidth}px`;
+  brandWordmark.style.transformOrigin = "top left";
+  brandWordmark.style.textAlign = "left";
+  brandWordmark.style.transform =
+    `scale(${lerp(postReveal.wordmarkScale, wordmarkTargetScale, dockProgress).toFixed(3)})`;
 }
 
 function maybeStartReveal() {
@@ -1119,6 +1208,7 @@ function updateScriptedMotion(dt, previousX, previousY) {
       state.sequence.phase = "done";
       state.sequence.phaseTime = 0;
       state.sequence.finished = true;
+      state.sequence.finishedTime = state.time;
     }
 
     return;
